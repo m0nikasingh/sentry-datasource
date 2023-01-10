@@ -61,12 +61,22 @@ type SentryErrorResponse struct {
 	Detail string `json:"detail"`
 }
 
+func (sc *SentryClient) fetchLink(r *http.Response) *Link {
+	link := &Link{}
+	if r.Header.Get("Link") != "" {
+		link = NewLink(r.Header.Get("Link"))
+	}
+
+	return link
+}
+
 func (sc *SentryClient) Fetch(path string, out interface{}) error {
 	req, _ := http.NewRequest(http.MethodGet, sc.BaseURL+path, nil)
 	res, err := sc.sentryHttpClient.Do(req)
 	if err != nil {
 		return err
 	}
+	_ = sc.fetchLink(res)
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusOK {
 		if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
